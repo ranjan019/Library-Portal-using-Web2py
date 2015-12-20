@@ -1,0 +1,31 @@
+{{extend 'layout.html'}}
+<br><br>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">{{=form}}<br></div>
+        <br><br>
+        {{if len(books)>0:}}
+            <br><br>
+        <table class="table table-hover">
+            <th>Book_id</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Publication</th>
+            <th>Publication_Year</th>
+            <th>Subject_Type</th>
+           {{for book in books:}}
+            <tr>
+                <td>{{=book.Book_id}}</td>
+                <td>{{=book.Title}}</td>
+                <td>{{=book.Author}}</td>
+                <td>{{=book.Publication}}</td>
+                <td>{{=book.Publication_Year}}</td>
+                <td>{{=book.Subject_Type}}</td>
+                <td><button onclick="location.href='{{=URL('default','Issued')}}'">Issue</button></td>
+                
+            </tr>
+            {{pass}}
+        </table>
+        {{pass}}
+    </div>
+</div>

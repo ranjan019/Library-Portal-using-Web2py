@@ -1,0 +1,148 @@
+# -*- coding: utf-8 -*-
+# this file is released under public domain and you can use without limitations
+
+#########################################################################
+## This is a sample controller
+## - index is the default action of any application
+## - user is required for authentication and authorization
+## - download is for downloading files uploaded in the db (does streaming)
+## - api is an example of Hypermedia API support and access control
+########################################################################
+#def login():
+ #   form = SQLFORM.factory(Field('Designation',requires=IS_IN_SET(['Faculty', 'Student', 'Admin'])),Field('username','string',requires=IS_NOT_EMPTY()),Field('password','password',readable=False,requires=#[IS_STRONG(),CRYPT(),IS_NOT_EMPTY()],label='Password')).process()
+#    if form.accepted:
+ #       response.flash='Form accepted'
+  #  elif form.errors:
+    #    response.flash='Invalid entry'
+    #else:
+     #   response.flash='Login Please'
+    #return locals()
+#@auth.requires_membership('faculty')
+@auth.requires_membership('student')
+def Issue1():
+    form=SQLFORM.factory(
+                Field('Roll_no','integer',requires=IS_NOT_EMPTY()),
+                Field('Book_Title','string',requires=IS_NOT_EMPTY()),
+                Field('Book_id','string',requires=IS_NOT_EMPTY()),
+                Field('Issue_date','datetime',default=request.now,requires=IS_DATE(format=('%d-%m-%Y')),writable=False)).process()
+    if form.accepted:
+        response.flash='Book issued'
+       # session.email=auth.user_email
+        #session.roll_no=form.vars.Roll_no
+        #session.book_id=form.vars.Book_id
+    elif form.errors:
+        response.flash='Invalid entry'
+    else:
+        pass
+    return locals()
+@auth.requires_membership('manager')
+def add_book():
+    form=SQLFORM(db.BOOKS).process()
+    if form.accepted:
+        response.flash='Book added'
+    elif form.errors:
+        response.flash='Invalid entry'
+    else:
+        response.flash='Fill in the details'
+    return locals()
+@auth.requires_membership('student')
+def Issued():
+    form=SQLFORM(db.Issued).process()
+    form.vars.Issued.Book_title=session.s2
+    form.vars.Issued.Book_Id=session.s1
+    if form.accepted:
+        response.flash='Book Issued'
+    elif form.errors:
+        response.flash='Invalid entry'
+    else:
+        response.flash='Fill in the details'
+    return locals()
+def search_book():
+    form = SQLFORM.factory(Field('Title'),Field('Author'))
+    if form.accepts(request):
+        books=db((db.BOOKS.Title==form.vars.Title)|(db.BOOKS.Author==form.vars.Author)).select()
+    else:
+        books=[]
+    return locals()
+#def register():
+ #   form=SQLFORM(db.register).process()
+  #  if form.accepted:
+   #     response.flash='Registered Successfully'
+    #elif form.errors:
+     #   response.flash='Invalid entry'
+    #else:
+     #   response.flash='Fill in the details'
+    #return locals()
+def index():
+    #redirect('http://127.0.0.1:8000/a/default/index.html')
+    message = T("Welcome")
+    return locals()
+def home():
+    redirect('http://127.0.0.1:8000/Portail_Library/default/index.html')
+def send_email():
+    import smtplib
+    message = """From: From Person <manager@fromdomain.com>
+    To: To Person <to@todomain.com>
+    MIME-Version: 1.0
+    Content-type: text/html
+    Subject: SMTP HTML e-mail test
+
+    This is an e-mail message to be sent in HTML format
+
+    <b></b>
+    <h1>This is headline.</h1>
+    """
+    try:
+       smtpObj = smtplib.SMTP('localhost')
+       smtpObj.sendmail(sender, receivers, message)         
+       response.flash= "Successfully sent email"
+    except SMTPException:
+       response.flash= "Error: unable to send email"
+def user():
+    """
+    exposes:
+    http://..../[app]/default/user/login
+    http://..../[app]/default/user/logout
+    http://..../[app]/default/user/register
+    http://..../[app]/default/user/profile
+    http://..../[app]/default/user/retrieve_password
+    http://..../[app]/default/user/change_password
+    http://..../[app]/default/user/manage_users (requires membership in
+    use @auth.requires_login()
+        @auth.requires_membership('group name')
+        @auth.requires_permission('read','table name',record_id)
+    to decorate functions that need access control
+    """
+    return dict(form=auth())
+
+
+@cache.action()
+def download():
+    """
+    allows downloading of uploaded files
+    http://..../[app]/default/download/[filename]
+    """
+    return response.download(request, db)
+
+
+def call():
+    """
+    exposes services. for example:
+    http://..../[app]/default/call/jsonrpc
+    decorate with @services.jsonrpc the functions to expose
+    supports xml, json, xmlrpc, jsonrpc, amfrpc, rss, csv
+    """
+    return service()
+
+
+@auth.requires_login() 
+def api():
+    """
+    this is example of API with access control
+    WEB2PY provides Hypermedia API (Collection+JSON) Experimental
+    """
+    from gluon.contrib.hypermedia import Collection
+    rules = {
+        '<tablename>': {'GET':{},'POST':{},'PUT':{},'DELETE':{}},
+        }
+    return Collection(db).process(request,response,rules)
